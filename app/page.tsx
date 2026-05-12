@@ -1,65 +1,112 @@
-import Image from "next/image";
+import { loadPatients, computeMetrics, countByCategory, countByYearAndType, statsByCountry, getScatterPoints } from "@/lib/data";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Users, Activity, Calendar, DollarSign, AlertTriangle } from "lucide-react";
+import { CancerTypeBar } from "@/components/charts/CancerTypeBar";
+import { YearlyTrend } from "@/components/charts/YearlyTrend";
+import { WorldMap } from "@/components/charts/WorldMap";
+import { StageDonut } from "@/components/charts/StageDonut";
+import { AgeSurvivalScatter } from "@/components/charts/AgeSurvivalScatter";
 
 export default function Home() {
+  // ⬇️ Esto corre en el servidor — el navegador NUNCA ve este código
+  const patients = loadPatients();
+  const metrics = computeMetrics(patients);
+  const cancerTypeData = countByCategory(patients, "Cancer_Type");
+  const yearlyTrendData = countByYearAndType(patients);
+  const countryData = statsByCountry(patients);
+  const stageData = countByCategory(patients, "Cancer_Stage");
+  const scatterData = getScatterPoints(patients);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <main className="min-h-screen bg-slate-50 p-8">
+      <div className="max-w-7xl mx-auto">
+
+        {/* Encabezado con gradiente */}
+        <div className="rounded-xl p-8 mb-8 text-white shadow-lg"
+             style={{ background: "linear-gradient(135deg, #1B2A4E 0%, #5C4DFF 100%)" }}>
+          <h1 className="text-3xl font-bold">Dashboard de Cáncer Global</h1>
+          <p className="text-slate-200 mt-1">
+            Análisis exploratorio de pacientes con cáncer a nivel mundial · 2015 – 2024
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        {/* Tarjetas de métricas */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <MetricCard
+            title="Total pacientes"
+            value={metrics.total.toLocaleString()}
+            icon={<Users className="h-5 w-5" />}
+            color="#5C4DFF"
+          />
+          <MetricCard
+            title="Cáncer más frecuente"
+            value={metrics.cancerComun}
+            icon={<Activity className="h-5 w-5" />}
+            color="#FF6B6B"
+          />
+          <MetricCard
+            title="Supervivencia promedio"
+            value={`${metrics.avgSurvival.toFixed(1)} años`}
+            icon={<Calendar className="h-5 w-5" />}
+            color="#22C1A2"
+          />
+          <MetricCard
+            title="Costo promedio"
+            value={`$${metrics.avgCost.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+            icon={<DollarSign className="h-5 w-5" />}
+            color="#4A90E2"
+          />
+          <MetricCard
+            title="Severidad promedio"
+            value={metrics.avgSeverity.toFixed(2)}
+            icon={<AlertTriangle className="h-5 w-5" />}
+            color="#FF9F40"
+          />
         </div>
-      </main>
-    </div>
+
+        {/* Mapa mundial */}
+        <div className="mt-6">
+          <WorldMap data={countryData} />
+        </div>
+
+        {/* Sección de gráficas — fila 1 */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
+          <CancerTypeBar data={cancerTypeData} />
+          <YearlyTrend data={yearlyTrendData} />
+        </div>
+
+        {/* Sección de gráficas — fila 2 */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+          <StageDonut data={stageData} />
+          <AgeSurvivalScatter data={scatterData} />
+        </div>
+
+      </div>
+    </main>
+  );
+}
+
+// Componente reutilizable para cada tarjeta
+function MetricCard({
+  title,
+  value,
+  icon,
+  color,
+}: {
+  title: string;
+  value: string;
+  icon: React.ReactNode;
+  color: string;
+}) {
+  return (
+    <Card className="border-l-4" style={{ borderLeftColor: color }}>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium text-slate-600">{title}</CardTitle>
+        <div style={{ color }}>{icon}</div>
+      </CardHeader>
+      <CardContent>
+        <div className="text-2xl font-bold text-slate-900">{value}</div>
+      </CardContent>
+    </Card>
   );
 }
