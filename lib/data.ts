@@ -21,6 +21,52 @@ export interface Patient {
   Target_Severity_Score: number;
 }
 
+// ============================================================
+// Filtros
+// ============================================================
+export interface Filters {
+  cancerTypes?: string[];
+  stages?: string[];
+  countries?: string[];
+  genders?: string[];
+  yearFrom?: number;
+  yearTo?: number;
+}
+
+export function parseFilters(sp: Record<string, string | string[] | undefined>): Filters {
+  const arr = (v: string | string[] | undefined): string[] | undefined => {
+    if (!v) return undefined;
+    const raw = Array.isArray(v) ? v.join(",") : v;
+    const list = raw.split(",").filter(Boolean);
+    return list.length ? list : undefined;
+  };
+  const num = (v: string | string[] | undefined): number | undefined => {
+    const raw = Array.isArray(v) ? v[0] : v;
+    const n = raw ? Number(raw) : NaN;
+    return Number.isFinite(n) ? n : undefined;
+  };
+  return {
+    cancerTypes: arr(sp.cancer),
+    stages: arr(sp.stage),
+    countries: arr(sp.country),
+    genders: arr(sp.gender),
+    yearFrom: num(sp.yearFrom),
+    yearTo: num(sp.yearTo),
+  };
+}
+
+export function applyFilters(patients: Patient[], f: Filters): Patient[] {
+  return patients.filter((p) => {
+    if (f.cancerTypes && !f.cancerTypes.includes(p.Cancer_Type)) return false;
+    if (f.stages && !f.stages.includes(p.Cancer_Stage)) return false;
+    if (f.countries && !f.countries.includes(p.Country_Region)) return false;
+    if (f.genders && !f.genders.includes(p.Gender)) return false;
+    if (f.yearFrom !== undefined && p.Year < f.yearFrom) return false;
+    if (f.yearTo !== undefined && p.Year > f.yearTo) return false;
+    return true;
+  });
+}
+
 // Lee el CSV desde el filesystem (corre en el servidor, no en el navegador)
 export function loadPatients(): Patient[] {
   const filePath = path.join(process.cwd(), "public", "data", "cancer.csv");
@@ -129,6 +175,84 @@ export function getScatterPoints(patients: Patient[], maxPoints = 3000): Scatter
     });
   }
   return points;
+}
+
+// Estadísticas de boxplot (mínimo, Q1, mediana, Q3, máximo) por etapa
+export interface BoxStats {
+  stage: string;
+  min: number;
+  q1: number;
+  median: number;
+  q3: number;
+  max: number;
+  count: number;
+}
+
+function percentile(sorted: number[], p: number): number {
+  const idx = (sorted.length - 1) * p;
+  const lo = Math.floor(idx);
+  const hi = Math.ceil(idx);
+  if (lo === hi) return sorted[lo];
+  return sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
+}
+
+export function survivalByStage(patients: Patient[]): BoxStats[] {
+  const buckets: Record<string, number[]> = {};
+  for (const p of patients) {
+    if (typeof p.Survival_Years !== "number") continue;
+    if (!buckets[p.Cancer_Stage]) buckets[p.Cancer_Stage] = [];
+    buckets[p.Cancer_Stage].push(p.Survival_Years);
+  }
+
+  return Object.entries(buckets).map(([stage, vals]) => {
+    const sorted = [...vals].sort((a, b) => a - b);
+    return {
+      stage,
+      min: sorted[0],
+      q1: percentile(sorted, 0.25),
+      median: percentile(sorted, 0.5),
+      q3: percentile(sorted, 0.75),
+      max: sorted[sorted.length - 1],
+      count: sorted.length,
+    };
+  });
+}
+
+// Resumen detallado por tipo de cáncer (para tabla del Resumen)
+export interface CancerTypeStats {
+  cancerType: string;
+  cases: number;
+  pct: number;
+  avgAge: number;
+  avgCost: number;
+  avgSurvival: number;
+  pctMaligno: number; // % en etapa avanzada (III + IV)
+}
+
+export function statsByCancerType(patients: Patient[]): CancerTypeStats[] {
+  const buckets: Record<string, Patient[]> = {};
+  for (const p of patients) {
+    if (!buckets[p.Cancer_Type]) buckets[p.Cancer_Type] = [];
+    buckets[p.Cancer_Type].push(p);
+  }
+  const total = patients.length;
+
+  return Object.entries(buckets)
+    .map(([cancerType, group]) => {
+      const avanzadas = group.filter(
+        (p) => p.Cancer_Stage === "Stage III" || p.Cancer_Stage === "Stage IV"
+      ).length;
+      return {
+        cancerType,
+        cases: group.length,
+        pct: (group.length / total) * 100,
+        avgAge: group.reduce((s, p) => s + (p.Age || 0), 0) / group.length,
+        avgCost: group.reduce((s, p) => s + (p.Treatment_Cost_USD || 0), 0) / group.length,
+        avgSurvival: group.reduce((s, p) => s + (p.Survival_Years || 0), 0) / group.length,
+        pctMaligno: (avanzadas / group.length) * 100,
+      };
+    })
+    .sort((a, b) => b.cases - a.cases);
 }
 
 // Calcula las métricas principales del dashboard

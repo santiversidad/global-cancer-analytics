@@ -1,112 +1,77 @@
-import { loadPatients, computeMetrics, countByCategory, countByYearAndType, statsByCountry, getScatterPoints } from "@/lib/data";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { computeMetrics, statsByCancerType } from "@/lib/data";
+import { getPageData } from "@/lib/getPageData";
+import { Card, CardContent } from "@/components/ui/card";
 import { Users, Activity, Calendar, DollarSign, AlertTriangle } from "lucide-react";
-import { CancerTypeBar } from "@/components/charts/CancerTypeBar";
-import { YearlyTrend } from "@/components/charts/YearlyTrend";
-import { WorldMap } from "@/components/charts/WorldMap";
-import { StageDonut } from "@/components/charts/StageDonut";
-import { AgeSurvivalScatter } from "@/components/charts/AgeSurvivalScatter";
+import { DashboardShell } from "@/components/DashboardShell";
+import { PageHeader } from "@/components/PageHeader";
+import { CancerTypeTable } from "@/components/charts/CancerTypeTable";
 
-export default function Home() {
-  // ⬇️ Esto corre en el servidor — el navegador NUNCA ve este código
-  const patients = loadPatients();
-  const metrics = computeMetrics(patients);
-  const cancerTypeData = countByCategory(patients, "Cancer_Type");
-  const yearlyTrendData = countByYearAndType(patients);
-  const countryData = statsByCountry(patients);
-  const stageData = countByCategory(patients, "Cancer_Stage");
-  const scatterData = getScatterPoints(patients);
+interface PageProps {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+export default async function Home({ searchParams }: PageProps) {
+  const { patients, options, totalCount, filteredCount, isEmpty } = await getPageData(searchParams);
 
   return (
-    <main className="min-h-screen bg-slate-50 p-8">
-      <div className="max-w-7xl mx-auto">
+    <DashboardShell options={options} totalCount={totalCount} filteredCount={filteredCount}>
+      <PageHeader
+        eyebrow="Sección 01"
+        title="Resumen general"
+        description="Cifras clave y desglose detallado del conjunto de pacientes filtrados."
+      />
 
-        {/* Encabezado con gradiente */}
-        <div className="rounded-xl p-8 mb-8 text-white shadow-lg"
-             style={{ background: "linear-gradient(135deg, #1B2A4E 0%, #5C4DFF 100%)" }}>
-          <h1 className="text-3xl font-bold">Dashboard de Cáncer Global</h1>
-          <p className="text-slate-200 mt-1">
-            Análisis exploratorio de pacientes con cáncer a nivel mundial · 2015 – 2024
-          </p>
+      {isEmpty ? (
+        <EmptyState />
+      ) : (
+        <div className="space-y-6">
+          <MetricsRow patients={patients} />
+          <CancerTypeTable data={statsByCancerType(patients)} />
         </div>
-
-        {/* Tarjetas de métricas */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          <MetricCard
-            title="Total pacientes"
-            value={metrics.total.toLocaleString()}
-            icon={<Users className="h-5 w-5" />}
-            color="#5C4DFF"
-          />
-          <MetricCard
-            title="Cáncer más frecuente"
-            value={metrics.cancerComun}
-            icon={<Activity className="h-5 w-5" />}
-            color="#FF6B6B"
-          />
-          <MetricCard
-            title="Supervivencia promedio"
-            value={`${metrics.avgSurvival.toFixed(1)} años`}
-            icon={<Calendar className="h-5 w-5" />}
-            color="#22C1A2"
-          />
-          <MetricCard
-            title="Costo promedio"
-            value={`$${metrics.avgCost.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
-            icon={<DollarSign className="h-5 w-5" />}
-            color="#4A90E2"
-          />
-          <MetricCard
-            title="Severidad promedio"
-            value={metrics.avgSeverity.toFixed(2)}
-            icon={<AlertTriangle className="h-5 w-5" />}
-            color="#FF9F40"
-          />
-        </div>
-
-        {/* Mapa mundial */}
-        <div className="mt-6">
-          <WorldMap data={countryData} />
-        </div>
-
-        {/* Sección de gráficas — fila 1 */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
-          <CancerTypeBar data={cancerTypeData} />
-          <YearlyTrend data={yearlyTrendData} />
-        </div>
-
-        {/* Sección de gráficas — fila 2 */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
-          <StageDonut data={stageData} />
-          <AgeSurvivalScatter data={scatterData} />
-        </div>
-
-      </div>
-    </main>
+      )}
+    </DashboardShell>
   );
 }
 
-// Componente reutilizable para cada tarjeta
-function MetricCard({
-  title,
-  value,
-  icon,
-  color,
-}: {
-  title: string;
-  value: string;
-  icon: React.ReactNode;
-  color: string;
-}) {
+function MetricsRow({ patients }: { patients: Parameters<typeof computeMetrics>[0] }) {
+  const m = computeMetrics(patients);
   return (
-    <Card className="border-l-4" style={{ borderLeftColor: color }}>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium text-slate-600">{title}</CardTitle>
-        <div style={{ color }}>{icon}</div>
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold text-slate-900">{value}</div>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <MetricCard title="Total pacientes" value={m.total.toLocaleString()} icon={<Users className="h-5 w-5" />} color="#5C4DFF" />
+      <MetricCard title="Cáncer más frecuente" value={m.cancerComun} icon={<Activity className="h-5 w-5" />} color="#FF6B6B" />
+      <MetricCard title="Supervivencia promedio" value={`${m.avgSurvival.toFixed(1)} años`} icon={<Calendar className="h-5 w-5" />} color="#22C1A2" />
+      <MetricCard title="Costo promedio" value={`$${m.avgCost.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} icon={<DollarSign className="h-5 w-5" />} color="#4A90E2" />
+      <MetricCard title="Severidad promedio" value={m.avgSeverity.toFixed(2)} icon={<AlertTriangle className="h-5 w-5" />} color="#FF9F40" />
+    </div>
+  );
+}
+
+function MetricCard({
+  title, value, icon, color,
+}: { title: string; value: string; icon: React.ReactNode; color: string }) {
+  return (
+    <Card className="border-0 shadow-sm hover:shadow-md transition-shadow">
+      <CardContent className="p-5 flex items-center gap-4">
+        <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: `${color}1A`, color }}>
+          {icon}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-xs text-slate-500 font-medium uppercase tracking-wide truncate">{title}</div>
+          <div className="text-xl font-bold text-slate-900 mt-0.5 truncate">{value}</div>
+        </div>
       </CardContent>
+    </Card>
+  );
+}
+
+function EmptyState() {
+  return (
+    <Card className="p-12 text-center text-slate-500 border-0 shadow-sm">
+      <AlertTriangle className="h-10 w-10 mx-auto mb-3 text-amber-400" />
+      <h2 className="text-lg font-semibold text-slate-700 mb-1">
+        No hay datos con los filtros seleccionados
+      </h2>
+      <p className="text-sm">Ajusta los filtros del sidebar para ver el dashboard.</p>
     </Card>
   );
 }

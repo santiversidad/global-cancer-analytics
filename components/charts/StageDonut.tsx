@@ -13,6 +13,33 @@ export const STAGE_COLORS: Record<string, string> = {
 
 const STAGE_ORDER = ["Stage 0", "Stage I", "Stage II", "Stage III", "Stage IV"];
 
+// Label que se renderiza DENTRO de cada porción
+function renderInnerLabel(props: {
+  cx: number; cy: number;
+  midAngle: number; innerRadius: number; outerRadius: number;
+  percent?: number;
+}) {
+  const { cx, cy, midAngle, innerRadius, outerRadius, percent = 0 } = props;
+  const RAD = Math.PI / 180;
+  const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+  const x = cx + radius * Math.cos(-midAngle * RAD);
+  const y = cy + radius * Math.sin(-midAngle * RAD);
+  return (
+    <text
+      x={x}
+      y={y}
+      fill="#ffffff"
+      textAnchor="middle"
+      dominantBaseline="central"
+      fontSize={12}
+      fontWeight={700}
+      style={{ pointerEvents: "none" }}
+    >
+      {(percent * 100).toFixed(1)}%
+    </text>
+  );
+}
+
 interface Props {
   data: { name: string; value: number }[];
 }
@@ -43,6 +70,8 @@ export function StageDonut({ data }: Props) {
                 paddingAngle={2}
                 stroke="#fff"
                 strokeWidth={2}
+                label={renderInnerLabel}
+                labelLine={false}
               >
                 {sorted.map((entry) => (
                   <Cell key={entry.name} fill={STAGE_COLORS[entry.name] ?? "#6B7280"} />
