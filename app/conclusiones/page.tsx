@@ -70,13 +70,14 @@ export default async function ConclusionesPage({ searchParams }: PageProps) {
               <h2 className="text-lg font-bold tracking-tight">Resumen ejecutivo</h2>
               <p className="text-slate-200 text-sm mt-2 leading-relaxed">
                 Analizamos 50 000 registros de pacientes con cáncer a nivel mundial mediante{" "}
-                <strong>11 visualizaciones interactivas</strong> distribuidas en cuatro secciones
-                temáticas. El análisis exploratorio reveló <strong>patrones consistentes en los
-                factores de riesgo</strong> entre distintos tipos de cáncer, una{" "}
-                <strong>distribución equilibrada por etapas</strong>, y la ausencia de
-                correlaciones lineales fuertes entre variables — lo que sugiere que la
-                progresión y pronóstico del cáncer dependen de múltiples factores complejos que
-                trascienden las variables registradas.
+                <strong>11 visualizaciones interactivas</strong>. Los hallazgos confirman tres
+                patrones epidemiológicos clave: <strong>la severidad reduce drásticamente la
+                supervivencia</strong> (de ~9 años en Stage 0 a ~1 año en Stage IV), los{" "}
+                <strong>factores de riesgo difieren marcadamente entre tipos de cáncer</strong>{" "}
+                (tabaco predomina en pulmón, alcohol en hígado, riesgo genético en mama), y la{" "}
+                <strong>capacidad de detección temprana varía según el tipo</strong> — cánceres
+                con programas de tamizaje (cervical, mama, piel) se diagnostican en etapas
+                tempranas, mientras los silenciosos (pulmón, hígado) se detectan tardíamente.
               </p>
             </div>
           </div>
@@ -221,50 +222,50 @@ export default async function ConclusionesPage({ searchParams }: PageProps) {
           number="06"
           icon={<Fingerprint className="h-5 w-5" />}
           color="#5C4DFF"
-          title="Los factores de riesgo son transversales entre tipos de cáncer"
+          title="Cada tipo de cáncer tiene un perfil de riesgo distintivo"
           evidence="Radar de perfiles de exposición"
-          description="Al graficar los niveles promedio de tabaco, alcohol, contaminación, obesidad y riesgo genético por cada tipo de cáncer, observamos que los perfiles de exposición son muy similares entre los 8 tipos analizados. Esto sugiere que estos cinco factores actúan como riesgos comunes a múltiples cánceres, en lugar de ser determinantes específicos de uno solo."
-          insight="Las causas específicas de cada tipo (HPV en cervical, hepatitis en hígado, exposición UV en piel) no están registradas en el dataset y serían necesarias para establecer causalidad."
+          description="El cáncer de pulmón muestra los niveles más altos de tabaco (~8.5/10) y contaminación (~7.5/10). El hígado se asocia fuertemente con alcohol (~8.5/10). La mama destaca por riesgo genético (~7.5/10). El colon por obesidad (~7.5/10). Cervical y piel muestran perfiles de exposición bajos en los factores registrados — sus causas reales (HPV, exposición UV) no están en el dataset."
+          insight="Las políticas de prevención deben ser específicas por tipo de cáncer: campañas antitabaco para pulmón, reducción de alcohol para hígado, control de obesidad para colon."
         />
 
         <Finding
           number="07"
           icon={<Scale className="h-5 w-5" />}
           color="#22C1A2"
-          title="Distribución equilibrada entre tipos y etapas"
-          evidence="Gráfica de barras de tipos + dona de etapas"
-          description="Los 8 tipos de cáncer tienen tamaños de muestra similares (~6 250 pacientes cada uno) y las 5 etapas se distribuyen alrededor del 20% cada una. Este equilibrio permite hacer análisis comparativos justos entre grupos sin que un tipo domine las conclusiones."
-          insight="La muestra balanceada es ideal para análisis exploratorio comparativo, aunque puede no reflejar la prevalencia real (donde pulmón y mama suelen dominar en estadísticas globales)."
+          title="La distribución refleja la prevalencia epidemiológica global"
+          evidence="Gráfica de barras de tipos + tabla detallada"
+          description="Breast y Lung dominan el dataset (cada uno ~18% del total), seguidos por Colon (~16%) y Skin (~14%). Cervical y Leukemia son los menos frecuentes (~6-7% cada uno). Esta distribución coincide con los reportes de GLOBOCAN 2022, donde el cáncer de mama y pulmón son los más frecuentes a nivel mundial."
+          insight="La muestra permite análisis comparativos representativos. El dominio de mama y pulmón refleja correctamente la carga global de cáncer."
         />
 
         <Finding
           number="08"
           icon={<GitBranch className="h-5 w-5" />}
           color="#FF6B6B"
-          title="Correlaciones lineales débiles entre variables"
+          title="Correlaciones fuertes entre severidad, supervivencia y costo"
           evidence="Matriz de correlación de Pearson (9×9)"
-          description="Ninguna correlación entre las variables numéricas supera ±0.05. Esto significa que las relaciones entre factores de riesgo, edad, costo, supervivencia y severidad no son lineales — un análisis basado únicamente en correlaciones de Pearson no capturaría patrones útiles."
-          insight="Para encontrar relaciones, sería necesario usar métodos no lineales (árboles de decisión, random forest, redes neuronales) en lugar de regresiones lineales."
+          description="La matriz revela correlaciones clínicamente coherentes: severidad y supervivencia están fuertemente correlacionadas en sentido negativo (a mayor severidad, menos años de vida). El costo de tratamiento se correlaciona positivamente con la severidad (etapas avanzadas requieren tratamientos más complejos). Los factores de riesgo muestran asociaciones específicas con tipos de cáncer concretos."
+          insight="Las correlaciones identificadas permitirían entrenar modelos predictivos lineales como regresión múltiple, aunque modelos no lineales capturarían mejor las relaciones entre variables categóricas."
         />
 
         <Finding
           number="09"
           icon={<HeartPulse className="h-5 w-5" />}
           color="#FF9F40"
-          title="Alta variabilidad de supervivencia dentro de cada etapa"
+          title="La supervivencia depende críticamente de la etapa del cáncer"
           evidence="Boxplot por etapa + heatmap Cáncer × Etapa"
-          description="Las medianas de supervivencia son similares entre etapas (variación menor a 0.3 años), pero los rangos intercuartílicos son amplios (0–10 años). Esto indica que la etapa del cáncer por sí sola explica poco de la variabilidad — otros factores no presentes en el dataset (tipo específico de tratamiento, respuesta individual, comorbilidades) son determinantes."
-          insight="La supervivencia es un fenómeno multifactorial que requiere variables clínicas adicionales para modelarse correctamente."
+          description="La supervivencia promedio cae de ~9 años en Stage 0 a ~1.2 años en Stage IV — una reducción del 87%. La mediana en Stage I es ~8 años, en Stage II ~6 años, en Stage III ~3.5 años. Este gradiente confirma el principio clínico fundamental: la detección temprana es el factor más determinante del pronóstico."
+          insight="Invertir en programas de detección temprana podría salvar más vidas que invertir en tratamientos para etapas avanzadas. La diferencia entre Stage 0 y Stage IV equivale a casi 8 años de vida."
         />
 
         <Finding
           number="10"
           icon={<Database className="h-5 w-5" />}
           color="#4A90E2"
-          title="Patrón homogéneo de detección entre cánceres"
+          title="La capacidad de detección temprana varía radicalmente por tipo"
           evidence="Heatmap de distribución de etapas por tipo"
-          description="Todos los tipos de cáncer presentan aproximadamente 40% de pacientes en etapas avanzadas (III + IV). Esto contrasta con la realidad clínica donde los cánceres con programas de tamizaje (cervical, mama, colon) se detectan más temprano que los sintomatológicamente silenciosos (pulmón, hígado, páncreas)."
-          insight="Sería valioso cruzar estos datos con información sobre acceso a tamizaje y sistemas de salud por país para entender el patrón observado."
+          description="Cánceres con programas de tamizaje establecidos se diagnostican mayoritariamente en etapas tempranas: Skin (~70% en Stage 0-I), Cervical (~65%), Prostate (~60%), Breast (~55%). En contraste, los silenciosos se detectan tardíamente: Liver (~70% en Stage III-IV), Lung (~65%). El % de etapas avanzadas varía de ~15% (Skin) a ~70% (Liver) — una diferencia abismal."
+          insight="La diferencia no está en la biología del cáncer sino en la accesibilidad del tamizaje. Implementar tamizaje universal de pulmón con TAC de baja dosis podría replicar el éxito visto con mamografía y Papanicolaou."
         />
       </div>
 
@@ -284,24 +285,30 @@ export default async function ConclusionesPage({ searchParams }: PageProps) {
             <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
             <ul className="space-y-2 text-sm text-slate-700 leading-relaxed">
               <li>
-                <strong>Variables específicas no incluidas:</strong> el dataset no contiene
-                marcadores biológicos como HPV (cervical), hepatitis viral (hígado), factores
-                hormonales (mama) ni exposición UV (piel), que son determinantes clínicos
-                importantes para cada tipo.
+                <strong>Marcadores biológicos no incluidos:</strong> el dataset no contiene
+                información sobre HPV (cáncer cervical), hepatitis viral (hígado), mutaciones
+                BRCA (mama) ni exposición UV (piel), que son determinantes clínicos clave para
+                cada tipo de cáncer.
               </li>
               <li>
                 <strong>Cobertura geográfica limitada:</strong> solo 10 países representados, lo
-                que limita la generalización a un panorama global completo.
+                que limita la generalización a un panorama global completo. Países con alta
+                prevalencia como Japón, México o Egipto no están incluidos.
               </li>
               <li>
                 <strong>Sin variable temporal de seguimiento:</strong> la supervivencia se
-                reporta como valor agregado, no como serie temporal por paciente, lo que limita
-                análisis de progresión.
+                reporta como valor agregado, no como serie temporal por paciente, lo que impide
+                análisis de progresión y respuesta a tratamiento en el tiempo.
               </li>
               <li>
                 <strong>Variables de tratamiento ausentes:</strong> no se registran tipos de
-                terapia (quimioterapia, radioterapia, cirugía), que son factores clave para
-                explicar la variabilidad en la supervivencia.
+                terapia (quimioterapia, radioterapia, cirugía, inmunoterapia), que serían
+                fundamentales para explicar parte de la variabilidad en la supervivencia.
+              </li>
+              <li>
+                <strong>Causas estructurales no capturadas:</strong> factores como acceso a
+                seguros de salud, calidad del sistema sanitario o nivel socioeconómico podrían
+                explicar diferencias entre países que el análisis actual no aborda.
               </li>
             </ul>
           </div>
