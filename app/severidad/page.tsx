@@ -1,11 +1,14 @@
-import { countByCategory, survivalByStage } from "@/lib/data";
+import { countByCategory, survivalByStage, survivalHeatmap, correlationMatrix, stageDistByCancer } from "@/lib/data";
 import { getPageData } from "@/lib/getPageData";
 import { Card } from "@/components/ui/card";
 import { AlertTriangle } from "lucide-react";
 import { DashboardShell } from "@/components/DashboardShell";
-import { PageHeader } from "@/components/PageHeader";
+import { PageHeader, SectionTitle } from "@/components/PageHeader";
 import { StageDonut } from "@/components/charts/StageDonut";
 import { SurvivalBoxplot } from "@/components/charts/SurvivalBoxplot";
+import { SurvivalHeatmap } from "@/components/charts/SurvivalHeatmap";
+import { CorrelationMatrix } from "@/components/charts/CorrelationMatrix";
+import { StageDistHeatmap } from "@/components/charts/StageDistHeatmap";
 
 interface PageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -25,9 +28,35 @@ export default async function SeveridadPage({ searchParams }: PageProps) {
       {isEmpty ? (
         <EmptyState />
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <StageDonut data={countByCategory(patients, "Cancer_Stage")} />
-          <SurvivalBoxplot data={survivalByStage(patients)} />
+        <div className="space-y-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <StageDonut data={countByCategory(patients, "Cancer_Stage")} />
+            <SurvivalBoxplot data={survivalByStage(patients)} />
+          </div>
+
+          <div>
+            <SectionTitle
+              title="¿Cuáles se diagnostican tarde?"
+              description="Distribución porcentual de etapas dentro de cada tipo de cáncer. Identifica qué tipos tienden a detectarse en estadios avanzados (III + IV)."
+            />
+            <StageDistHeatmap data={stageDistByCancer(patients)} />
+          </div>
+
+          <div>
+            <SectionTitle
+              title="Matriz de pronóstico"
+              description="Cruce entre tipo de cáncer y etapa, coloreado por años de supervivencia promedio. Identifica de un vistazo qué combinaciones tienen mejor o peor pronóstico."
+            />
+            <SurvivalHeatmap data={survivalHeatmap(patients)} />
+          </div>
+
+          <div>
+            <SectionTitle
+              title="Correlación entre variables numéricas"
+              description="Análisis exploratorio clásico de minería de datos. Identifica qué variables tienden a moverse juntas y cuáles son independientes."
+            />
+            <CorrelationMatrix data={correlationMatrix(patients)} />
+          </div>
         </div>
       )}
     </DashboardShell>

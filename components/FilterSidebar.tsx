@@ -4,7 +4,7 @@ import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useCallback, useState, useEffect } from "react";
 import Link from "next/link";
 import { Slider } from "@/components/ui/slider";
-import { Filter, RotateCcw, LayoutDashboard, Globe2, TrendingUp, Activity, ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from "lucide-react";
+import { Filter, RotateCcw, LayoutDashboard, Globe2, TrendingUp, Activity, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
 import { Logo } from "@/components/Logo";
 
 const NAV_ITEMS = [
@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { href: "/mapa",        label: "Mapa mundial",       icon: Globe2,         desc: "¿Dónde ocurre?" },
   { href: "/tendencias",  label: "Tipos y tendencias", icon: TrendingUp,     desc: "¿Qué y cuándo?" },
   { href: "/severidad",   label: "Análisis por etapa", icon: Activity,       desc: "¿Qué tan grave?" },
+  { href: "/conclusiones", label: "Conclusiones",      icon: Sparkles,       desc: "Hallazgos clave" },
 ];
 
 interface AvailableOptions {
@@ -79,6 +80,10 @@ export function FilterSidebar({ options, totalCount, filteredCount }: Props) {
   const hasFilters = searchParams.toString().length > 0;
   const [isOpen, setIsOpen] = useState(true);
   const [filtersOpen, setFiltersOpen] = useState(true);
+
+  // Páginas donde los filtros no aplican (contenido estático)
+  const FILTERS_DISABLED_ROUTES = ["/conclusiones"];
+  const filtersDisabled = FILTERS_DISABLED_ROUTES.includes(pathname);
 
   // Botón flotante para reabrir cuando el sidebar está cerrado
   if (!isOpen) {
@@ -150,22 +155,36 @@ export function FilterSidebar({ options, totalCount, filteredCount }: Props) {
       </div>
 
       {/* Header de filtros — clickable para plegar */}
-      <button
-        onClick={() => setFiltersOpen((v) => !v)}
-        className="w-full flex items-center gap-2 mb-1 pt-4 border-t border-slate-200 group"
-      >
-        <Filter className="h-4 w-4 text-indigo-600" />
-        <h2 className="text-sm font-semibold tracking-wide uppercase text-slate-900 flex-1 text-left">
-          Filtros {hasFilters && <span className="text-[10px] ml-1 font-normal text-indigo-600">(activos)</span>}
-        </h2>
-        {filtersOpen ? (
-          <ChevronUp className="h-4 w-4 text-slate-400 group-hover:text-slate-700" />
-        ) : (
-          <ChevronDown className="h-4 w-4 text-slate-400 group-hover:text-slate-700" />
-        )}
-      </button>
+      {filtersDisabled ? (
+        <div className="mt-2 pt-4 border-t border-slate-200">
+          <div className="flex items-center gap-2 text-slate-400">
+            <Filter className="h-4 w-4" />
+            <span className="text-xs uppercase tracking-wide font-semibold">
+              Filtros no aplican aquí
+            </span>
+          </div>
+          <p className="text-[11px] text-slate-400 mt-1">
+            Esta sección muestra conclusiones del análisis completo.
+          </p>
+        </div>
+      ) : (
+        <button
+          onClick={() => setFiltersOpen((v) => !v)}
+          className="w-full flex items-center gap-2 mb-1 pt-4 border-t border-slate-200 group"
+        >
+          <Filter className="h-4 w-4 text-indigo-600" />
+          <h2 className="text-sm font-semibold tracking-wide uppercase text-slate-900 flex-1 text-left">
+            Filtros {hasFilters && <span className="text-[10px] ml-1 font-normal text-indigo-600">(activos)</span>}
+          </h2>
+          {filtersOpen ? (
+            <ChevronUp className="h-4 w-4 text-slate-400 group-hover:text-slate-700" />
+          ) : (
+            <ChevronDown className="h-4 w-4 text-slate-400 group-hover:text-slate-700" />
+          )}
+        </button>
+      )}
 
-      {filtersOpen && (
+      {!filtersDisabled && filtersOpen && (
         <>
           <p className="text-xs text-slate-500 mb-4">Refina los datos del dashboard</p>
 

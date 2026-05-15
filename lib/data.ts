@@ -255,6 +255,149 @@ export function statsByCancerType(patients: Patient[]): CancerTypeStats[] {
     .sort((a, b) => b.cases - a.cases);
 }
 
+// Promedio de cada factor de riesgo (0-10) por tipo de cáncer, formato para RadarChart.
+// Cada fila es un eje del radar; cada tipo de cáncer es una serie.
+export interface RadarRow {
+  factor: string;
+  [cancerType: string]: string | number;
+}
+
+export function riskFactorsByCancerType(patients: Patient[]): RadarRow[] {
+  const buckets: Record<string, Patient[]> = {};
+  for (const p of patients) {
+    if (!buckets[p.Cancer_Type]) buckets[p.Cancer_Type] = [];
+    buckets[p.Cancer_Type].push(p);
+  }
+
+  const FACTORS: Array<{ label: string; col: keyof Patient }> = [
+    { label: "Tabaco",        col: "Smoking" },
+    { label: "Alcohol",       col: "Alcohol_Use" },
+    { label: "Contaminación", col: "Air_Pollution" },
+    { label: "Obesidad",      col: "Obesity_Level" },
+    { label: "Genético",      col: "Genetic_Risk" },
+  ];
+
+  return FACTORS.map(({ label, col }) => {
+    const row: RadarRow = { factor: label };
+    for (const [cancer, group] of Object.entries(buckets)) {
+      const avg = group.reduce((s, p) => s + (Number(p[col]) || 0), 0) / group.length;
+      row[cancer] = Number(avg.toFixed(2));
+    }
+    return row;
+  });
+}
+
+// Datos del heatmap: combinación tipo de cáncer × etapa, con supervivencia promedio
+export interface HeatmapCell {
+  cancerType: string;
+  stage: string;
+  avgSurvival: number;
+  count: number;
+}
+
+export function survivalHeatmap(patients: Patient[]): HeatmapCell[] {
+  const buckets: Record<string, Patient[]> = {};
+  for (const p of patients) {
+    const key = `${p.Cancer_Type}|${p.Cancer_Stage}`;
+    if (!buckets[key]) buckets[key] = [];
+    buckets[key].push(p);
+  }
+
+  return Object.entries(buckets).map(([key, group]) => {
+    const [cancerType, stage] = key.split("|");
+    return {
+      cancerType,
+      stage,
+      avgSurvival: group.reduce((s, p) => s + (p.Survival_Years || 0), 0) / group.length,
+      count: group.length,
+    };
+  });
+}
+
+// Matriz de correlación entre variables numéricas — base del análisis exploratorio
+export interface CorrelationCell {
+  x: string;
+  y: string;
+  value: number;
+}
+
+function pearson(pairs: Array<[number, number]>): number {
+  const n = pairs.length;
+  if (n === 0) return 0;
+  let sumX = 0, sumY = 0;
+  for (const [x, y] of pairs) { sumX += x; sumY += y; }
+  const meanX = sumX / n;
+  const meanY = sumY / n;
+  let cov = 0, varX = 0, varY = 0;
+  for (const [x, y] of pairs) {
+    const dx = x - meanX;
+    const dy = y - meanY;
+    cov += dx * dy;
+    varX += dx * dx;
+    varY += dy * dy;
+  }
+  const denom = Math.sqrt(varX * varY);
+  return denom === 0 ? 0 : cov / denom;
+}
+
+export function correlationMatrix(patients: Patient[]): CorrelationCell[] {
+  const cols: Array<keyof Patient> = [
+    "Age",
+    "Genetic_Risk",
+    "Air_Pollution",
+    "Alcohol_Use",
+    "Smoking",
+    "Obesity_Level",
+    "Treatment_Cost_USD",
+    "Survival_Years",
+    "Target_Severity_Score",
+  ];
+
+  const result: CorrelationCell[] = [];
+  for (const x of cols) {
+    for (const y of cols) {
+      const pairs = patients
+        .map((p) => [Number(p[x]), Number(p[y])] as [number, number])
+        .filter(([a, b]) => Number.isFinite(a) && Number.isFinite(b));
+      result.push({ x: String(x), y: String(y), value: pearson(pairs) });
+    }
+  }
+  return result;
+}
+
+// Distribución de etapas por tipo de cáncer (cada fila suma 100%)
+export interface StageDistCell {
+  cancerType: string;
+  stage: string;
+  count: number;
+  pct: number;
+}
+
+export function stageDistByCancer(patients: Patient[]): StageDistCell[] {
+  const buckets: Record<string, Patient[]> = {};
+  for (const p of patients) {
+    if (!buckets[p.Cancer_Type]) buckets[p.Cancer_Type] = [];
+    buckets[p.Cancer_Type].push(p);
+  }
+
+  const STAGES = ["Stage 0", "Stage I", "Stage II", "Stage III", "Stage IV"];
+  const cells: StageDistCell[] = [];
+
+  for (const [cancerType, group] of Object.entries(buckets)) {
+    const total = group.length;
+    for (const stage of STAGES) {
+      const count = group.filter((p) => p.Cancer_Stage === stage).length;
+      cells.push({
+        cancerType,
+        stage,
+        count,
+        pct: total > 0 ? (count / total) * 100 : 0,
+      });
+    }
+  }
+  return cells;
+}
+
 // Calcula las métricas principales del dashboard
 export function computeMetrics(patients: Patient[]) {
   const total = patients.length;

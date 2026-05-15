@@ -139,6 +139,18 @@ export function SurvivalBoxplot({ data }: Props) {
                     strokeWidth={3}
                   />
 
+                  {/* Valor exacto de la mediana */}
+                  <text
+                    x={x}
+                    y={yPos(d.median) - 6}
+                    textAnchor="middle"
+                    fontSize="11"
+                    fontWeight="700"
+                    fill="#1B2A4E"
+                  >
+                    {d.median.toFixed(2)}
+                  </text>
+
                   {/* Etiqueta de la etapa */}
                   <text
                     x={x}
@@ -163,6 +175,44 @@ export function SurvivalBoxplot({ data }: Props) {
               );
             })}
           </svg>
+
+          {/* Panel de hallazgo automático */}
+          {(() => {
+            const medians = sorted.map((d) => d.median);
+            const medianRange = Math.max(...medians) - Math.min(...medians);
+            const isUniform = medianRange < 0.3;
+            return (
+              <div
+                className={`mt-4 p-3 rounded-lg text-xs border ${
+                  isUniform
+                    ? "bg-amber-50 border-amber-200 text-amber-900"
+                    : "bg-emerald-50 border-emerald-200 text-emerald-900"
+                }`}
+              >
+                <div className="font-bold mb-1">
+                  {isUniform ? "⚠ Hallazgo importante" : "📊 Patrón detectado"}
+                </div>
+                <div className="leading-relaxed">
+                  {isUniform ? (
+                    <>
+                      Las medianas de supervivencia son prácticamente idénticas entre etapas
+                      (variación de solo <span className="font-bold">{medianRange.toFixed(2)} años</span>).
+                      En este dataset, la etapa del cáncer <span className="font-bold">no predice la
+                      supervivencia</span>, lo que sugiere que los datos podrían ser sintéticos o que
+                      las etapas no fueron asignadas siguiendo criterios clínicos reales.
+                    </>
+                  ) : (
+                    <>
+                      Las medianas varían en{" "}
+                      <span className="font-bold">{medianRange.toFixed(2)} años</span> entre las
+                      diferentes etapas, lo que sugiere una correlación clara entre severidad y
+                      supervivencia.
+                    </>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Tooltip flotante */}
           {hovered && (

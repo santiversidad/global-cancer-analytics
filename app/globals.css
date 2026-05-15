@@ -2,6 +2,12 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* Evitar bordes blancos por overscroll y fijar fondo */
+html, body {
+  background-color: #f1f5f9;
+  overscroll-behavior: none;
+}
+
 /* Scrollbar fino y discreto */
 .scrollbar-thin {
   scrollbar-width: thin;
