@@ -67,8 +67,13 @@ export function applyFilters(patients: Patient[], f: Filters): Patient[] {
   });
 }
 
+// Cache en memoria del CSV — evita reparsearlo en cada navegación
+let cachedPatients: Patient[] | null = null;
+
 // Lee el CSV desde el filesystem (corre en el servidor, no en el navegador)
+// La primera llamada parsea 50k filas (~300ms), las siguientes son instantáneas.
 export function loadPatients(): Patient[] {
+  if (cachedPatients !== null) return cachedPatients;
   const filePath = path.join(process.cwd(), "public", "data", "cancer.csv");
   const csv = fs.readFileSync(filePath, "utf-8");
   const { data } = Papa.parse<Patient>(csv, {
@@ -76,6 +81,7 @@ export function loadPatients(): Patient[] {
     dynamicTyping: true,    // convierte "25" en 25 automáticamente
     skipEmptyLines: true,
   });
+  cachedPatients = data;
   return data;
 }
 
@@ -396,6 +402,121 @@ export function stageDistByCancer(patients: Patient[]): StageDistCell[] {
     }
   }
   return cells;
+}
+
+// Treemap jerárquico: Tipo de cáncer → Etapa, tamaño = costo total acumulado.
+// Permite ver de un vistazo dónde se concentra el gasto sanitario.
+export interface TreemapNode {
+  name: string;
+  size?: number;          // costo total (lo que dimensiona el rectángulo)
+  cases?: number;         // pacientes en esa combinación
+  avgCost?: number;       // costo promedio individual
+  cancerType?: string;    // padre (para acceder al colorear)
+  children?: TreemapNode[];
+}
+
+export function costTreemapByCancerStage(patients: Patient[]): TreemapNode[] {
+  const buckets: Record<string, Record<string, Patient[]>> = {};
+  for (const p of patients) {
+    if (!buckets[p.Cancer_Type]) buckets[p.Cancer_Type] = {};
+    if (!buckets[p.Cancer_Type][p.Cancer_Stage]) buckets[p.Cancer_Type][p.Cancer_Stage] = [];
+    buckets[p.Cancer_Type][p.Cancer_Stage].push(p);
+  }
+
+  const STAGE_ORDER = ["Stage 0", "Stage I", "Stage II", "Stage III", "Stage IV"];
+
+  return Object.entries(buckets)
+    .map(([cancerType, stages]) => {
+      const children = STAGE_ORDER
+        .filter((s) => stages[s])
+        .map((stage) => {
+          const group = stages[stage];
+          const totalCost = group.reduce((s, p) => s + (p.Treatment_Cost_USD || 0), 0);
+          const avgCost = totalCost / group.length;
+          return {
+            name: stage,
+            size: totalCost,
+            cases: group.length,
+            avgCost,
+            cancerType,
+          };
+        });
+
+      const totalSize = children.reduce((s, c) => s + (c.size || 0), 0);
+      return {
+        name: cancerType,
+        size: totalSize,
+        children,
+      };
+    })
+    .sort((a, b) => (b.size || 0) - (a.size || 0));
+}
+
+// Conteo de género por tipo de cáncer (revela restricciones biológicas: cervical=mujer, próstata=hombre)
+export interface GenderCancerRow {
+  cancerType: string;
+  Male: number;
+  Female: number;
+  Other: number;
+  total: number;
+}
+export function genderByCancerType(patients: Patient[]): GenderCancerRow[] {
+  const buckets: Record<string, GenderCancerRow> = {};
+  for (const p of patients) {
+    if (!buckets[p.Cancer_Type]) {
+      buckets[p.Cancer_Type] = { cancerType: p.Cancer_Type, Male: 0, Female: 0, Other: 0, total: 0 };
+    }
+    const b = buckets[p.Cancer_Type];
+    if (p.Gender === "Male") b.Male++;
+    else if (p.Gender === "Female") b.Female++;
+    else b.Other++;
+    b.total++;
+  }
+  return Object.values(buckets).sort((a, b) => b.total - a.total);
+}
+
+// Edad por tipo de cáncer (mínimo, Q1, mediana, Q3, máximo) — usa el mismo cálculo del boxplot
+export function ageByCancerType(patients: Patient[]): BoxStats[] {
+  const buckets: Record<string, number[]> = {};
+  for (const p of patients) {
+    if (typeof p.Age !== "number") continue;
+    if (!buckets[p.Cancer_Type]) buckets[p.Cancer_Type] = [];
+    buckets[p.Cancer_Type].push(p.Age);
+  }
+  return Object.entries(buckets).map(([cancerType, vals]) => {
+    const sorted = [...vals].sort((a, b) => a - b);
+    return {
+      stage: cancerType, // reutilizamos la interfaz BoxStats (campo "stage" funciona como label)
+      min: sorted[0],
+      q1: percentile(sorted, 0.25),
+      median: percentile(sorted, 0.5),
+      q3: percentile(sorted, 0.75),
+      max: sorted[sorted.length - 1],
+      count: sorted.length,
+    };
+  }).sort((a, b) => a.median - b.median); // ordenado por mediana asc
+}
+
+// Puntos para el scatter Severidad × Supervivencia
+export interface ScatterPoint {
+  severity: number;
+  survival: number;
+  stage: string;
+}
+export function severitySurvivalScatter(patients: Patient[], maxPoints = 2000): ScatterPoint[] {
+  const step = Math.max(1, Math.floor(patients.length / maxPoints));
+  const points: ScatterPoint[] = [];
+  for (let i = 0; i < patients.length; i += step) {
+    const p = patients[i];
+    if (typeof p.Target_Severity_Score === "number" && typeof p.Survival_Years === "number") {
+      points.push({
+        severity: p.Target_Severity_Score,
+        survival: p.Survival_Years,
+        stage: p.Cancer_Stage,
+      });
+    }
+  }
+  return points;
 }
 
 // Calcula las métricas principales del dashboard

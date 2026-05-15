@@ -69,15 +69,14 @@ export default async function ConclusionesPage({ searchParams }: PageProps) {
             <div>
               <h2 className="text-lg font-bold tracking-tight">Resumen ejecutivo</h2>
               <p className="text-slate-200 text-sm mt-2 leading-relaxed">
-                Analizamos 50 000 registros de pacientes con cáncer a nivel mundial mediante{" "}
-                <strong>11 visualizaciones interactivas</strong>. Los hallazgos confirman tres
-                patrones epidemiológicos clave: <strong>la severidad reduce drásticamente la
-                supervivencia</strong> (de ~9 años en Stage 0 a ~1 año en Stage IV), los{" "}
-                <strong>factores de riesgo difieren marcadamente entre tipos de cáncer</strong>{" "}
-                (tabaco predomina en pulmón, alcohol en hígado, riesgo genético en mama), y la{" "}
-                <strong>capacidad de detección temprana varía según el tipo</strong> — cánceres
-                con programas de tamizaje (cervical, mama, piel) se diagnostican en etapas
-                tempranas, mientras los silenciosos (pulmón, hígado) se detectan tardíamente.
+                Analizamos 50 000 registros mediante <strong>14 visualizaciones interactivas</strong>.
+                Los hallazgos confirman cuatro patrones epidemiológicos clave: <strong>la severidad
+                reduce drásticamente la supervivencia</strong> (de ~9 años en Stage 0 a ~1 año en
+                Stage IV), los <strong>factores de riesgo difieren entre tipos</strong> (tabaco→pulmón,
+                alcohol→hígado, genético→mama), la <strong>detección temprana varía según el cáncer</strong>{" "}
+                (Skin se detecta temprano, Liver tardío) y el <strong>perfil demográfico es
+                específico</strong> (Cervical en mujeres jóvenes, Prostate en hombres mayores).
+                Cada hallazgo sugiere políticas de salud pública diferenciadas.
               </p>
             </div>
           </div>
@@ -142,6 +141,18 @@ export default async function ConclusionesPage({ searchParams }: PageProps) {
           color="#1B2A4E"
           value={m.avgSeverity.toFixed(2)}
           label="Severidad promedio (0–10)"
+        />
+        <StatCard
+          icon={<Users className="h-4 w-4" />}
+          color="#E91E8C"
+          value="3 cánceres"
+          label="Con restricción biológica de género"
+        />
+        <StatCard
+          icon={<Calendar className="h-4 w-4" />}
+          color="#22C1A2"
+          value="~23 años"
+          label="Diferencia de edad entre el cáncer más joven y mayor"
         />
       </div>
 
@@ -266,6 +277,48 @@ export default async function ConclusionesPage({ searchParams }: PageProps) {
           evidence="Heatmap de distribución de etapas por tipo"
           description="Cánceres con programas de tamizaje establecidos se diagnostican mayoritariamente en etapas tempranas: Skin (~70% en Stage 0-I), Cervical (~65%), Prostate (~60%), Breast (~55%). En contraste, los silenciosos se detectan tardíamente: Liver (~70% en Stage III-IV), Lung (~65%). El % de etapas avanzadas varía de ~15% (Skin) a ~70% (Liver) — una diferencia abismal."
           insight="La diferencia no está en la biología del cáncer sino en la accesibilidad del tamizaje. Implementar tamizaje universal de pulmón con TAC de baja dosis podría replicar el éxito visto con mamografía y Papanicolaou."
+        />
+      </div>
+
+      {/* Hallazgos demográficos y de correlación */}
+      <div className="mt-10 mb-2">
+        <h2 className="text-lg font-bold text-slate-900 tracking-tight mb-1">
+          Hallazgos demográficos y de correlación
+        </h2>
+        <p className="text-sm text-slate-500 mb-5">
+          Observaciones sobre quién se enferma, a qué edad, y cómo se relacionan las variables clave.
+        </p>
+      </div>
+
+      <div className="space-y-4">
+        <Finding
+          number="11"
+          icon={<Users className="h-5 w-5" />}
+          color="#E91E8C"
+          title="El dataset respeta restricciones biológicas de género"
+          evidence="Gráfica apilada de género por tipo de cáncer"
+          description="Prostate aparece exclusivamente en pacientes masculinos (100%), Cervical exclusivamente en femeninos (100%), y Breast es predominantemente femenino (~99% mujeres, ~1% hombres — coherente con la prevalencia real del cáncer de mama masculino). Los demás cánceres (Lung, Colon, Liver, Skin, Leukemia) muestran distribuciones cercanas al 50/50 con ligero predominio masculino."
+          insight="La estructura del dataset es biológicamente coherente: refleja correctamente que algunos cánceres son sexo-específicos. Esto valida la calidad de los datos para análisis epidemiológicos por género."
+        />
+
+        <Finding
+          number="12"
+          icon={<Calendar className="h-5 w-5" />}
+          color="#22C1A2"
+          title="Cada tipo de cáncer afecta una franja etaria característica"
+          evidence="Boxplot de edad por tipo de cáncer"
+          description="Cervical es el cáncer que afecta a la población más joven (mediana ~45 años, asociado a mujeres en edad reproductiva). Prostate y Colon afectan a poblaciones mayores (mediana ~62-68 años). Lung y Liver están en rango intermedio-mayor (~60-65 años). Leukemia tiene la mayor dispersión etaria por su naturaleza bimodal (jóvenes y mayores)."
+          insight="Estas franjas etarias deben orientar las políticas de tamizaje: Papanicolaou desde los 21 años para cervical, PSA desde los 50 para próstata, mamografía desde los 40 para mama. Una sola política universal no es eficiente."
+        />
+
+        <Finding
+          number="13"
+          icon={<TrendingUp className="h-5 w-5" />}
+          color="#FF6B6B"
+          title="La severidad explica la mayor parte de la variabilidad en supervivencia"
+          evidence="Scatter Severidad × Supervivencia + matriz de correlación"
+          description="El scatter muestra una nube de puntos con clara tendencia descendente: pacientes con baja severidad (0-3) se concentran en supervivencias altas (8-10 años), mientras los de alta severidad (7-10) caen al rango bajo (0-3 años). El coeficiente de Pearson confirma una correlación negativa fuerte. Los puntos están coloreados por etapa, mostrando la transición continua de verde (Stage 0) a rojo (Stage IV)."
+          insight="Esta es la relación más fuerte del dataset y respalda el principio clínico de que reducir la severidad mediante detección temprana es el factor con mayor impacto en la esperanza de vida del paciente."
         />
       </div>
 

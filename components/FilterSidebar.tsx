@@ -128,6 +128,7 @@ export function FilterSidebar({ options, totalCount, filteredCount }: Props) {
               <Link
                 key={item.href}
                 href={item.href}
+                prefetch
                 className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors group ${
                   isActive ? "bg-indigo-50 text-indigo-900" : "text-slate-700 hover:bg-slate-100"
                 }`}

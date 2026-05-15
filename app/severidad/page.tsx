@@ -1,4 +1,4 @@
-import { countByCategory, survivalByStage, survivalHeatmap, correlationMatrix, stageDistByCancer } from "@/lib/data";
+import { countByCategory, survivalByStage, survivalHeatmap, correlationMatrix, stageDistByCancer, costTreemapByCancerStage, severitySurvivalScatter } from "@/lib/data";
 import { getPageData } from "@/lib/getPageData";
 import { Card } from "@/components/ui/card";
 import { AlertTriangle } from "lucide-react";
@@ -9,6 +9,8 @@ import { SurvivalBoxplot } from "@/components/charts/SurvivalBoxplot";
 import { SurvivalHeatmap } from "@/components/charts/SurvivalHeatmap";
 import { CorrelationMatrix } from "@/components/charts/CorrelationMatrix";
 import { StageDistHeatmap } from "@/components/charts/StageDistHeatmap";
+import { CostTreemap } from "@/components/charts/CostTreemap";
+import { SeveritySurvivalScatter } from "@/components/charts/SeveritySurvivalScatter";
 
 interface PageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -36,6 +38,14 @@ export default async function SeveridadPage({ searchParams }: PageProps) {
 
           <div>
             <SectionTitle
+              title="Relación severidad ↔ supervivencia"
+              description="Cada punto es un paciente. Muestra visualmente cómo la severidad determina los años de vida restantes."
+            />
+            <SeveritySurvivalScatter data={severitySurvivalScatter(patients)} />
+          </div>
+
+          <div>
+            <SectionTitle
               title="¿Cuáles se diagnostican tarde?"
               description="Distribución porcentual de etapas dentro de cada tipo de cáncer. Identifica qué tipos tienden a detectarse en estadios avanzados (III + IV)."
             />
@@ -48,6 +58,14 @@ export default async function SeveridadPage({ searchParams }: PageProps) {
               description="Cruce entre tipo de cáncer y etapa, coloreado por años de supervivencia promedio. Identifica de un vistazo qué combinaciones tienen mejor o peor pronóstico."
             />
             <SurvivalHeatmap data={survivalHeatmap(patients)} />
+          </div>
+
+          <div>
+            <SectionTitle
+              title="Distribución económica del gasto"
+              description="Cada rectángulo representa la combinación tipo de cáncer × etapa, dimensionado por el costo total acumulado. Identifica visualmente dónde se concentra el gasto sanitario."
+            />
+            <CostTreemap data={costTreemapByCancerStage(patients)} />
           </div>
 
           <div>

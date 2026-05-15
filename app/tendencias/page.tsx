@@ -1,4 +1,4 @@
-import { countByCategory, countByYearAndType, riskFactorsByCancerType } from "@/lib/data";
+import { countByCategory, countByYearAndType, riskFactorsByCancerType, genderByCancerType, ageByCancerType } from "@/lib/data";
 import { getPageData } from "@/lib/getPageData";
 import { Card } from "@/components/ui/card";
 import { AlertTriangle } from "lucide-react";
@@ -7,6 +7,8 @@ import { PageHeader, SectionTitle } from "@/components/PageHeader";
 import { CancerTypeBar } from "@/components/charts/CancerTypeBar";
 import { YearlyTrend } from "@/components/charts/YearlyTrend";
 import { RiskFactorsRadar } from "@/components/charts/RiskFactorsRadar";
+import { GenderCancerBar } from "@/components/charts/GenderCancerBar";
+import { AgeByCancerBoxplot } from "@/components/charts/AgeByCancerBoxplot";
 
 interface PageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -38,6 +40,17 @@ export default async function TendenciasPage({ searchParams }: PageProps) {
               description="Compara cómo varían los niveles de tabaco, alcohol, contaminación, obesidad y riesgo genético entre los pacientes de cada tipo de cáncer."
             />
             <RiskFactorsRadar data={riskFactorsByCancerType(patients)} />
+          </div>
+
+          <div>
+            <SectionTitle
+              title="Composición demográfica"
+              description="Distribución de género y rangos de edad para cada tipo de cáncer."
+            />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <GenderCancerBar data={genderByCancerType(patients)} />
+              <AgeByCancerBoxplot data={ageByCancerType(patients)} />
+            </div>
           </div>
         </div>
       )}
